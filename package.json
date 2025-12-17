@@ -1,0 +1,8 @@
+
+{
+  "name": "specter-ai-robson",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Elite AI sales strategist application adapted for Vercel deployment."
+}

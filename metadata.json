@@ -1,0 +1,8 @@
+{
+  "name": "Agent AI RobSon - SPECTER Edition",
+  "description": "An elite AI sales strategist application that helps diagnose sales leaks, define your selling archetype, build an automated arsenal, and create high-impact 30-day battle plans.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
