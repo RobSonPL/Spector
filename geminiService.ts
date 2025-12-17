@@ -1,80 +1,83 @@
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
-/**
- * SPECTER AI Service
- * Inicjalizuje klienta przy każdym zapytaniu, aby zawsze korzystać 
- * z najaktualniejszej konfiguracji environment variables.
- */
-const getAI = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    throw new Error("API_KEY is not defined in environment variables.");
-  }
-  return new GoogleGenAI({ apiKey });
-};
+const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
-export const specterQuery = async (prompt: string, model: string = 'gemini-3-pro-preview') => {
+export const specterQuery = async (prompt: string, model: string = 'gemini-3-pro-preview', configOverride: any = {}) => {
+  const ai = getAI();
   try {
-    const ai = getAI();
     const response = await ai.models.generateContent({
       model: model,
-      contents: prompt,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
       config: {
-        temperature: 0.8,
-        topP: 0.9,
+        temperature: 0.7,
+        topP: 0.95,
         topK: 40,
-        // Używamy thinkingConfig tylko dla modeli serii 3 i 2.5
-        thinkingConfig: { thinkingBudget: 0 }
+        ...configOverride
       }
     });
-    
-    // Zgodnie z wytycznymi: dostęp przez właściwość .text
-    return response.text || "Błąd: SPECTER nie zwrócił treści.";
-  } catch (error: any) {
-    console.error("SPECTER AI Error:", error);
-    if (error.message?.includes("API_KEY")) {
-      return "BŁĄD KRYTYCZNY: Brak klucza API w konfiguracji Vercel.";
-    }
-    return `SYSTEM ERROR: ${error.message || "Nieznany błąd połączenia."}`;
+    return response.text || "Błąd komunikacji ze SPECTEREM.";
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    return "SPECTER jest obecnie niedostępny. Sprawdź połączenie.";
   }
 };
 
 export const prompts = {
   diagnosis: (product: string, goal: string, objection: string) => `
     ROLE: Jesteś SPECTER, elitarny strateg sprzedaży AI.
-    ZADANIE: Na podstawie danych użytkownika przygotuj bezlitosną diagnozę.
-    DANE: Produkt/Rezultat: ${product}, Cel: ${goal}, Obiekcja: ${objection}.
-    
-    Zwróć wynik w formacie Markdown z tabelą ocen. Skup się na brutalnej szczerości.
+    DANE: Rezultat: ${product}, Cel: ${goal}, Obiekcja: ${objection}
+    Zwróć wynik w formacie Markdown z tabelą diagnozy.
   `,
   
   journey: (steps: string, leak: string) => `
     ROLE: SPECTER, analityk procesów.
-    ZADANIE: Zidentyfikuj "dziury" w lejku: ${steps}. Największy wyciek: ${leak}.
-    Postaw hipotezę psychologiczną, dlaczego klienci tam rezygnują.
+    ZADANIE: Zmapować lejek i postawić hipotezę o przecieku: ${steps}, Przeciek: ${leak}
   `,
 
   arsenal: (archetype: string, goal: string, objection: string) => `
-    ROLE: SPECTER, copywriter sprzedażowy.
-    ARCHETYP: ${archetype}.
-    ZADANIE: Stwórz 3 szablony amunicji (Mail AIDA, LinkedIn, Skrypt na obiekcję: ${objection}).
-    CEL: ${goal}.
+    ROLE: SPECTER, copywriter.
+    Archetyp: ${archetype}, Cel: ${goal}, Obiekcja: ${objection}
   `,
 
   automation: (tasks: string, time: string) => `
-    ROLE: SPECTER, optymalizator czasu.
-    ZADANIE: Zaproponuj automatyzację dla: ${tasks}. Czas do odzyskania: ${time}.
+    ROLE: SPECTER, optymalizacja.
+    Zadania: ${tasks}, Czas: ${time}
   `,
 
   sprint: (goal: string) => `
     ROLE: SPECTER, dowódca polowy.
     ZADANIE: Stwórz plan bitwy na 30 dni dla celu: ${goal}.
-    Zwróć tabelę z 4 tygodniami, misjami i konkretnymi KPI.
+    Musisz zwrócić tablicę 4 tygodni, każdy z misją, 3-4 konkretnymi działaniami i jednym KPI.
   `,
 
   workshop: (kpis: string, notes: string) => `
-    ROLE: SPECTER, strateg Q2.
-    ZADANIE: Przeanalizuj wyniki: ${kpis} i wnioski: ${notes}. Zaproponuj 3 priorytety strategiczne.
+    ROLE: SPECTER, strateg.
+    KPI: ${kpis}, Notatki: ${notes}
   `
+};
+
+export const sprintSchema = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      week: { type: Type.STRING },
+      mission: { type: Type.STRING },
+      actions: {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING },
+            text: { type: Type.STRING },
+            completed: { type: Type.BOOLEAN }
+          },
+          required: ["id", "text", "completed"]
+        }
+      },
+      kpi: { type: Type.STRING }
+    },
+    required: ["week", "mission", "actions", "kpi"]
+  }
 };

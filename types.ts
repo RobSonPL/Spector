@@ -8,21 +8,14 @@ export type StepId =
   | 'arsenal'
   | 'automation'
   | 'sprint'
+  | 'summary'
   | 'feedback'
-  | 'workshop'
-  | 'summary';
-
-export interface SubTask {
-  id: string;
-  text: string;
-  completed: boolean;
-}
+  | 'workshop';
 
 export interface SprintAction {
   id: string;
   text: string;
   completed: boolean;
-  subTasks: SubTask[];
 }
 
 export interface SprintWeek {
@@ -43,9 +36,8 @@ export interface UserState {
   hatedTasks: string;
   timeLost: string;
   kpisConfirmed: boolean;
-  sprintResultData?: string;
   sprintWeeks: SprintWeek[];
-  transactionHistory: number[];
+  sprintResultData?: string;
 }
 
 export interface Step {
@@ -64,7 +56,7 @@ export const APP_STEPS: Step[] = [
   { id: 'arsenal', title: 'Arsenał Handlowca', role: 'Copywriter Sprzedażowy', task: 'Budowa amunicji' },
   { id: 'automation', title: 'Automatyzacja', role: 'Specjalista Optymalizacji', task: 'Odzyskiwanie czasu' },
   { id: 'sprint', title: 'Sprint 30 Dni', role: 'Dowódca Polowy', task: 'Plan bitwy' },
+  { id: 'summary', title: 'Podsumowanie', role: 'Analityk Postępu', task: 'Wizualizacja sukcesu' },
   { id: 'feedback', title: 'Pętla Feedbacku', role: 'Analityk Pola Bitwy', task: 'Analiza Win/Loss' },
   { id: 'workshop', title: 'Warsztat Strategiczny', role: 'Strateg Sprzedaży', task: 'Plan na kolejny kwartał' },
-  { id: 'summary', title: 'Podsumowanie', role: 'SPECTER', task: 'Eksport Raportu' },
 ];
