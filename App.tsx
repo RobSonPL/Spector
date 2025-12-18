@@ -27,10 +27,12 @@ const UI_TEXT = {
     metricsTitle: 'DASHBOARD LICZB',
     leadsLabel: 'Leady / Miesiąc',
     convLabel: 'Konwersja (%)',
-    avgLabel: 'Śr. Transakcja',
+    avgLabel: 'Śr. Transakcja (PLN)',
     cacLabel: 'CAC',
     clvLabel: 'CLV',
     targetLabel: 'Cel',
+    trendTitle: 'TREND WARTOŚCI TRANSAKCJI',
+    progressTitle: 'POSTĘP OPERACJI TYGODNIOWEJ'
   },
   en: {
     init: 'SYSTEM INITIALIZATION...',
@@ -48,10 +50,12 @@ const UI_TEXT = {
     metricsTitle: 'DATA DASHBOARD',
     leadsLabel: 'Leads / Month',
     convLabel: 'Conversion (%)',
-    avgLabel: 'Avg Deal',
+    avgLabel: 'Avg Deal (PLN)',
     cacLabel: 'CAC',
     clvLabel: 'CLV',
     targetLabel: 'Target',
+    trendTitle: 'DEAL VALUE TREND',
+    progressTitle: 'WEEKLY OPERATION PROGRESS'
   },
   de: {
     init: 'SYSTEM-INITIALISIERUNG...',
@@ -69,10 +73,12 @@ const UI_TEXT = {
     metricsTitle: 'DATEN-DASHBOARD',
     leadsLabel: 'Leads / Monat',
     convLabel: 'Konvertierung (%)',
-    avgLabel: 'Durchschn. Deal',
+    avgLabel: 'Durchschn. Deal (PLN)',
     cacLabel: 'CAC',
     clvLabel: 'CLV',
     targetLabel: 'Ziel',
+    trendTitle: 'DEAL-WERT-TREND',
+    progressTitle: 'WÖCHENTLICHER FORTSCHRITT'
   },
   es: {
     init: 'INICIALIZACIÓN DEL SISTEMA...',
@@ -90,10 +96,12 @@ const UI_TEXT = {
     metricsTitle: 'PANEL DE DATOS',
     leadsLabel: 'Leads / Mes',
     convLabel: 'Conversión (%)',
-    avgLabel: 'Transacción Media',
+    avgLabel: 'Transacción Media (PLN)',
     cacLabel: 'CAC',
     clvLabel: 'CLV',
     targetLabel: 'Objetivo',
+    trendTitle: 'TENDENCIA DE VALOR',
+    progressTitle: 'PROGRESO SEMANAL'
   }
 };
 
@@ -119,9 +127,70 @@ const MetricBar: React.FC<{ label: string; value: number; max: number; color: st
   );
 };
 
+const TrendLine: React.FC<{ value: number; label: string }> = ({ value, label }) => {
+  const data = [value * 0.85, value * 0.9, value * 0.95, value];
+  const max = Math.max(...data, 1);
+  const points = data.map((d, i) => `${(i * 100) / 3},${100 - (d / max) * 100}`).join(' ');
+
+  return (
+    <div className="mt-6 p-6 bg-blue-50/30 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-900/30">
+      <h4 className="text-[10px] mono font-bold uppercase mb-4 text-blue-600 flex items-center gap-2"><TrendingUp className="w-4 h-4" /> {label}</h4>
+      <div className="h-32 w-full relative">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+          <polyline
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            points={points}
+            className="text-blue-600"
+          />
+          {data.map((d, i) => (
+            <circle key={i} cx={(i * 100) / 3} cy={100 - (d / max) * 100} r="3" className="text-blue-600 fill-white dark:fill-neutral-900 stroke-current" strokeWidth="2" />
+          ))}
+        </svg>
+        <div className="flex justify-between mt-2 text-[8px] mono text-neutral-400">
+          <span>M-3</span>
+          <span>M-2</span>
+          <span>M-1</span>
+          <span className="font-bold text-blue-600">NOW</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const WeeklyProgressChart: React.FC<{ weeks: SprintWeek[] }> = ({ weeks }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-10">
+      {weeks.map((week, idx) => {
+        const completed = week.actions.filter(a => a.completed).length;
+        const total = week.actions.length || 1;
+        const pct = (completed / total) * 100;
+        
+        return (
+          <div key={idx} className="p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl shadow-sm flex items-center gap-6">
+            <div className="relative w-20 h-20 shrink-0">
+               <svg className="w-full h-full transform -rotate-90">
+                 <circle cx="40" cy="40" r="32" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-neutral-100 dark:text-neutral-800" />
+                 <circle cx="40" cy="40" r="32" stroke="currentColor" strokeWidth="6" strokeDasharray={201} strokeDashoffset={201 - (pct / 100) * 201} strokeLinecap="round" fill="transparent" className="text-blue-600 transition-all duration-1000" />
+               </svg>
+               <div className="absolute inset-0 flex items-center justify-center font-black text-sm text-neutral-900 dark:text-white">{Math.round(pct)}%</div>
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] mono text-blue-600 font-black uppercase tracking-widest">{week.week}</p>
+              <h4 className="text-sm font-black text-neutral-900 dark:text-white uppercase truncate">{week.mission}</h4>
+              <p className="text-[10px] text-neutral-500 mt-1 font-bold">{completed} / {total} ZADANIA UKOŃCZONE</p>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export default function App() {
   const [userState, setUserState] = useState<UserState>(() => {
-    const saved = localStorage.getItem('specter_state_v5');
+    const saved = localStorage.getItem('specter_state_v6');
     return saved ? JSON.parse(saved) : {
       language: 'pl',
       theme: 'light',
@@ -146,7 +215,7 @@ export default function App() {
   const currentStep = APP_STEPS[currentStepIndex];
 
   useEffect(() => {
-    localStorage.setItem('specter_state_v5', JSON.stringify(userState));
+    localStorage.setItem('specter_state_v6', JSON.stringify(userState));
     document.documentElement.classList.toggle('dark', userState.theme === 'dark');
   }, [userState]);
 
@@ -162,10 +231,16 @@ export default function App() {
 
   const getAiProposal = async (fieldName: string) => {
     setIsSuggesting(fieldName);
-    const ctx = `Product: ${userState.productResult}, Goal: ${userState.quarterlyGoal}`;
-    const res = await specterQuery(prompts.fieldSuggestion(fieldName, ctx, userState.language));
-    setUserState(p => ({ ...p, fieldSuggestions: { ...p.fieldSuggestions, [fieldName]: res } }));
-    setIsSuggesting(null);
+    setError(null);
+    try {
+      const ctx = `Product: ${userState.productResult}, Goal: ${userState.quarterlyGoal}`;
+      const res = await specterQuery(prompts.fieldSuggestion(fieldName, ctx, userState.language));
+      setUserState(p => ({ ...p, fieldSuggestions: { ...p.fieldSuggestions, [fieldName]: res } }));
+    } catch (e: any) {
+      console.error("Proposal Error:", e);
+    } finally {
+      setIsSuggesting(null);
+    }
   };
 
   const generateSprint = async () => {
@@ -176,14 +251,36 @@ export default function App() {
         responseMimeType: "application/json", 
         responseSchema: sprintSchema 
       });
-      // Safety check for empty or broken responses
-      if (!res || res.trim() === '') throw new Error("Empty AI response");
       
       const data = JSON.parse(res);
       setUserState(p => ({ ...p, sprintWeeks: data }));
     } catch (e: any) {
       console.error("Sprint Gen Error:", e);
-      setError("DOWÓDCA napotkał błąd podczas dekodowania planu bitwy. Spróbuj ponownie.");
+      const msg = e?.message || "";
+      if (msg.includes("429") || msg.includes("quota")) {
+        setError("Przekroczono limit zapytań API (Quota Exceeded). Poczekaj chwilę i spróbuj ponownie.");
+      } else {
+        setError("DOWÓDCA napotkał błąd podczas dekodowania planu bitwy. Upewnij się, że Twoje dane są poprawne i spróbuj ponownie.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const performDiagnosis = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await specterQuery(prompts.diagnosis(userState.productResult, userState.quarterlyGoal, userState.mainObjection, userState.language));
+      setAiResponse(res);
+    } catch (e: any) {
+      console.error("Diagnosis Error:", e);
+      const msg = e?.message || "";
+      if (msg.includes("429") || msg.includes("quota")) {
+        setError("Przekroczono limit zapytań API (Quota Exceeded). Poczekaj chwilę.");
+      } else {
+        setError("SPECTER nie mógł przeprowadzić diagnozy. Sprawdź połączenie i spróbuj ponownie.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -198,6 +295,15 @@ export default function App() {
     });
   };
 
+  const toggleTask = (wIdx: number, aId: string) => {
+    const nw = [...userState.sprintWeeks];
+    const item = nw[wIdx].actions.find(it => it.id === aId);
+    if (item) {
+      item.completed = !item.completed;
+      setUserState(p => ({ ...p, sprintWeeks: nw }));
+    }
+  };
+
   const renderStepContent = () => {
     switch (currentStep.id) {
       case 'intro':
@@ -210,7 +316,7 @@ export default function App() {
               </div>
             </div>
             <div className="space-y-4">
-              <h2 className="text-7xl font-black tracking-tighter text-neutral-900 dark:text-white uppercase">SPECTER <span className="text-blue-600">AI</span></h2>
+              <h2 className="text-7xl font-black tracking-tighter text-neutral-900 dark:text-white uppercase">SPECTER</h2>
               <p className="text-xs mono text-neutral-400 uppercase tracking-[0.6em] font-bold">{t.init}</p>
             </div>
             <div className="flex flex-wrap justify-center gap-3">
@@ -234,7 +340,7 @@ export default function App() {
                 { id: 'mainObjection', icon: <Search />, placeholder: 'Główna obiekcja...', val: userState.mainObjection }
               ].map(f => (
                 <div key={f.id} className="relative">
-                  <input placeholder={f.placeholder} className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[2rem] pl-14 pr-16 py-6 text-neutral-900 dark:text-white focus:ring-4 ring-blue-500/10 focus:border-blue-600 outline-none transition-all shadow-sm font-medium" value={f.val} onChange={e => setUserState(p => ({ ...p, [f.id]: e.target.value }))} />
+                  <input placeholder={f.placeholder} className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[2rem] pl-14 pr-16 py-6 text-neutral-900 dark:text-white focus:ring-4 ring-blue-500/10 focus:border-blue-600 outline-none transition-all shadow-sm font-medium" value={f.val} onChange={e => setUserState(p => ({ ...p, [f.id]: (e.target as HTMLInputElement).value }))} />
                   <div className="absolute left-6 top-7 text-neutral-400">{f.icon}</div>
                   <button onClick={() => getAiProposal(f.id)} className="absolute right-5 top-5 p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-2xl hover:bg-blue-600 hover:text-white transition-all">
                     {isSuggesting === f.id ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
@@ -242,7 +348,7 @@ export default function App() {
                 </div>
               ))}
              </div>
-             {!aiResponse && <button onClick={async () => setAiResponse(await specterQuery(prompts.diagnosis(userState.productResult, userState.quarterlyGoal, userState.mainObjection, userState.language)))} disabled={isLoading} className="w-full py-7 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase text-lg shadow-xl hover:bg-blue-700 transition-all">{isLoading ? <Loader2 className="animate-spin mx-auto" /> : t.diagnosisBtn}</button>}
+             {!aiResponse && <button onClick={performDiagnosis} disabled={isLoading} className="w-full py-7 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase text-lg shadow-xl hover:bg-blue-700 transition-all">{isLoading ? <Loader2 className="animate-spin mx-auto" /> : t.diagnosisBtn}</button>}
           </div>
         );
 
@@ -266,9 +372,11 @@ export default function App() {
             </div>
             <div className="p-10 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[3.5rem] shadow-xl">
                <h3 className="text-lg font-black mb-8 uppercase flex items-center gap-3"><Sparkles className="text-blue-600" /> Tactical Visuals</h3>
-               <MetricBar label="Leads Projection" value={userState.metrics.currentLeads} max={userState.metrics.targetLeads * 1.2} color="#3b82f6" />
+               <MetricBar label="Leads Projection" value={userState.metrics.currentLeads} max={userState.metrics.targetLeads * 1.2 || 1} color="#3b82f6" />
                <MetricBar label="Conv Rate %" value={userState.metrics.conversionRate} max={100} color="#10b981" />
-               <MetricBar label="CAC vs Value" value={userState.metrics.cac} max={userState.metrics.clv / 5} color="#f59e0b" />
+               <MetricBar label="CAC vs Value" value={userState.metrics.cac} max={userState.metrics.clv / 5 || 1} color="#f59e0b" />
+               
+               <TrendLine value={userState.metrics.avgDealValue} label={t.trendTitle} />
             </div>
             <button onClick={handleNext} className="w-full py-7 bg-blue-600 text-white rounded-[2.5rem] font-black uppercase text-lg hover:bg-blue-700 transition-all shadow-xl">{t.next}</button>
           </div>
@@ -315,7 +423,7 @@ export default function App() {
                   <div key={wIdx} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[3rem] p-10 shadow-sm transition-all hover:shadow-xl">
                     <div className="flex justify-between items-start mb-8"><div><span className="text-[10px] mono text-blue-600 font-black uppercase tracking-widest">{week.week}</span><h4 className="text-2xl font-black text-neutral-900 dark:text-white mt-1 uppercase tracking-tight">{week.mission}</h4></div><div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-2xl text-xs mono text-blue-600 font-bold uppercase">{week.kpi}</div></div>
                     <div className="space-y-3">{week.actions.map(a => (
-                      <button key={a.id} onClick={() => { const nw = [...userState.sprintWeeks]; const item = nw[wIdx].actions.find(it => it.id === a.id); if (item) item.completed = !item.completed; setUserState(p => ({ ...p, sprintWeeks: nw })); }} className={`w-full text-left p-5 rounded-2xl border flex items-center gap-4 transition-all ${a.completed ? 'bg-blue-50/50 dark:bg-blue-900/5 border-blue-200 dark:border-blue-900 text-neutral-400' : 'bg-neutral-50 dark:bg-neutral-800/40 border-neutral-100 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-blue-400'}`}>
+                      <button key={a.id} onClick={() => toggleTask(wIdx, a.id)} className={`w-full text-left p-5 rounded-2xl border flex items-center gap-4 transition-all ${a.completed ? 'bg-blue-50/50 dark:bg-blue-900/5 border-blue-200 dark:border-blue-900 text-neutral-400' : 'bg-neutral-50 dark:bg-neutral-800/40 border-neutral-100 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:border-blue-400'}`}>
                         <div className={`w-7 h-7 rounded-xl flex items-center justify-center border transition-all ${a.completed ? 'bg-blue-600 border-blue-600 shadow-lg' : 'border-neutral-300 dark:border-neutral-600'}`}>{a.completed && <CheckCircle2 className="w-5 h-5 text-white" />}</div>
                         <span className={`text-base font-bold ${a.completed ? 'line-through' : ''}`}>{a.text}</span>
                       </button>
@@ -334,12 +442,32 @@ export default function App() {
           <div className="space-y-12 animate-in fade-in duration-1000">
             <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-[4rem] p-12 md:p-20 shadow-2xl relative overflow-hidden">
                <div className="absolute top-0 right-0 p-12 opacity-5"><ShieldCheck className="w-48 h-48" /></div>
-               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 mb-16 relative z-10"><div><h3 className="text-4xl font-black text-neutral-900 dark:text-white mb-4 uppercase tracking-tighter">{t.status}</h3><div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800"><ShieldCheck className="w-5 h-5 text-blue-600" /><span className="text-xs mono text-blue-600 font-black uppercase tracking-widest">OFFENSIVE_PROTOCOL_ACTIVE</span></div></div><div className="flex gap-4 no-print"><button onClick={() => window.print()} className="p-6 bg-neutral-100 dark:bg-neutral-800 rounded-[2rem] hover:bg-blue-600 hover:text-white transition-all shadow-md"><Printer className="w-7 h-7" /></button><button className="p-6 bg-blue-600 text-white rounded-[2rem] hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/30"><Download className="w-7 h-7" /></button></div></div>
-               <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16 relative z-10">
+               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-10 mb-16 relative z-10">
+                  <div>
+                    <h3 className="text-4xl font-black text-neutral-900 dark:text-white mb-4 uppercase tracking-tighter">{t.status}</h3>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800">
+                      <ShieldCheck className="w-5 h-5 text-blue-600" />
+                      <span className="text-xs mono text-blue-600 font-black uppercase tracking-widest">OFFENSIVE_PROTOCOL_ACTIVE</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 no-print">
+                    <button onClick={() => window.print()} className="p-6 bg-neutral-100 dark:bg-neutral-800 rounded-[2rem] hover:bg-blue-600 hover:text-white transition-all shadow-md"><Printer className="w-7 h-7" /></button>
+                    <button className="p-6 bg-blue-600 text-white rounded-[2rem] hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/30"><Download className="w-7 h-7" /></button>
+                  </div>
+               </div>
+
+               <div className="relative z-10">
+                  <h4 className="text-[11px] mono font-black uppercase tracking-[0.4em] text-neutral-400 mb-8 flex items-center gap-3"><PieChart className="w-5 h-5 text-blue-600" /> {t.progressTitle}</h4>
+                  <WeeklyProgressChart weeks={userState.sprintWeeks} />
+               </div>
+
+               <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 relative z-10">
                  {userState.sprintWeeks.map((week, idx) => {
-                   const pct = (week.actions.filter(a => a.completed).length / (week.actions.length || 1)) * 100;
+                   const completed = week.actions.filter(a => a.completed).length;
+                   const total = week.actions.length || 1;
+                   const pct = (completed / total) * 100;
                    return (
-                     <div key={idx} className="flex flex-col items-center p-8 bg-neutral-50 dark:bg-neutral-800/40 rounded-[3rem] border border-neutral-100 dark:border-neutral-800 group hover:border-blue-500 transition-all">
+                     <div key={idx} className="flex flex-col items-center p-8 bg-neutral-50 dark:bg-neutral-800/40 rounded-[3rem] border border-neutral-100 dark:border-neutral-800 group hover:border-blue-500 transition-all shadow-sm">
                         <div className="w-24 h-24 mb-6 relative">
                            <svg className="w-full h-full transform -rotate-90">
                              <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="text-neutral-200 dark:text-neutral-800" />
@@ -347,7 +475,7 @@ export default function App() {
                            </svg>
                            <div className="absolute inset-0 flex items-center justify-center font-black text-xl text-neutral-900 dark:text-white">{Math.round(pct)}%</div>
                         </div>
-                        <span className="text-[10px] mono font-black text-neutral-400 uppercase tracking-widest group-hover:text-blue-500">W{idx + 1}</span>
+                        <span className="text-[10px] mono font-black text-neutral-400 uppercase tracking-widest group-hover:text-blue-600 transition-colors">W{idx + 1}</span>
                      </div>
                    );
                  })}
@@ -369,7 +497,7 @@ export default function App() {
         <aside className="w-80 hidden lg:flex flex-col bg-white dark:bg-neutral-950 border-r border-neutral-200 dark:border-neutral-800 p-10 no-print animate-in slide-in-from-left duration-700 relative z-50 shadow-2xl">
            <div className="flex items-center gap-4 mb-16">
               <div className="p-3 bg-blue-600 text-white rounded-2xl shadow-xl shadow-blue-500/20"><Terminal className="w-7 h-7" /></div>
-              <h1 className="text-2xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">SPECTER <span className="text-blue-600">AI</span></h1>
+              <h1 className="text-2xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">SPECTER</h1>
            </div>
            <nav className="flex-1 space-y-4">
               {APP_STEPS.map((step, idx) => {
@@ -401,7 +529,7 @@ export default function App() {
              <header className="flex justify-between items-center mb-16 no-print">
                 <div className="flex items-center gap-5">
                   <div className="p-4 bg-blue-600 text-white rounded-[2rem] shadow-2xl shadow-blue-500/30"><Terminal className="w-10 h-10" /></div>
-                  <h1 className="text-3xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">SPECTER <span className="text-blue-600">AI</span></h1>
+                  <h1 className="text-3xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter">SPECTER</h1>
                 </div>
                 <button onClick={() => setUserState(p => ({ ...p, theme: p.theme === 'dark' ? 'light' : 'dark' }))} className="p-6 bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] shadow-xl hover:scale-110 transition-transform">{userState.theme === 'dark' ? <Sun className="w-8 h-8 text-yellow-500" /> : <Moon className="w-8 h-8 text-blue-600" />}</button>
              </header>
