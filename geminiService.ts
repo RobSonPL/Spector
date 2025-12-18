@@ -2,7 +2,14 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Language } from "./types";
 
-const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const getApiKey = () => {
+  if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+    return process.env.API_KEY;
+  }
+  return (window as any).API_KEY || '';
+};
+
+const getAI = () => new GoogleGenAI({ apiKey: getApiKey() });
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -35,21 +42,15 @@ export const specterQuery = async (
       lastError = error;
       const errorMessage = error?.message || "";
       
-      // If it's a rate limit error (429), try exponential backoff
       if (errorMessage.includes("429") || errorMessage.includes("RESOURCE_EXHAUSTED")) {
         const waitTime = Math.pow(2, i) * 1000 + Math.random() * 1000;
-        console.warn(`Quota exceeded. Retrying in ${Math.round(waitTime)}ms... (Attempt ${i + 1}/${retries})`);
         await delay(waitTime);
         continue;
       }
-      
-      // For other errors, break early or handle specifically
-      console.error("Gemini Query Error:", error);
       throw error; 
     }
   }
-
-  throw lastError || new Error("SPECTER failed to respond after multiple attempts.");
+  throw lastError || new Error("SPECTER communication failed.");
 };
 
 export const prompts = {
@@ -57,32 +58,23 @@ export const prompts = {
     ROLE: SPECTER, Elite Sales Strategist.
     LANGUAGE: Respond strictly in ${lang}.
     DATA: Product: ${product}, Goal: ${goal}, Objection: ${objection}.
-    Provide a detailed diagnosis table and a short recommendation.
-    Additionally, at the very end, provide a section "NEXT_STEP_HINT" with one sentence of tactical advice.
+    Provide a detailed diagnosis table and tactical advice.
   `,
   
   fieldSuggestion: (fieldName: string, currentContext: string, lang: Language) => `
-    ROLE: SPECTER, Sales Assistant.
+    ROLE: SPECTER, Assistant.
     FIELD: ${fieldName}
     CONTEXT: ${currentContext}
     LANGUAGE: Respond strictly in ${lang}.
-    GIVE 3 brief, professional suggestions for this field in sales context.
-    Format: Suggestion 1 | Suggestion 2 | Suggestion 3
+    GIVE 3 brief tactical suggestions.
   `,
 
   sprint: (goal: string, lang: Language) => `
-    ROLE: SPECTER, Tactical Commander.
+    ROLE: SPECTER, Commander.
     LANGUAGE: Respond strictly in ${lang}.
     GOAL: ${goal}.
-    Generate a JSON array of 4 weeks for a sales sprint. Each week object must have: week, mission, actions (array of {id, text, completed: false}), and kpi.
-    Return ONLY valid JSON.
-  `,
-
-  metricsAnalysis: (metrics: any, lang: Language) => `
-    ROLE: SPECTER, Performance Analyst.
-    LANGUAGE: Respond strictly in ${lang}.
-    Analyze: Leads: ${metrics.currentLeads}, Conv: ${metrics.conversionRate}%, Avg Deal: ${metrics.avgDealValue}, CAC: ${metrics.cac}.
-    Provide a quick SWOT analysis of these numbers.
+    Generate a JSON array of 4 weeks. Each week: {week, mission, actions (array of {id, text, completed: false}), kpi}.
+    Return ONLY JSON.
   `
 };
 
