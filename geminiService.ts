@@ -1,5 +1,6 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
+import { Language } from "./types";
 
 const getAI = () => new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
@@ -16,44 +17,43 @@ export const specterQuery = async (prompt: string, model: string = 'gemini-3-pro
         ...configOverride
       }
     });
-    return response.text || "Błąd komunikacji ze SPECTEREM.";
+    return response.text || "Communication error.";
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "SPECTER jest obecnie niedostępny. Sprawdź połączenie.";
+    return "SPECTER is currently unavailable.";
   }
 };
 
 export const prompts = {
-  diagnosis: (product: string, goal: string, objection: string) => `
-    ROLE: Jesteś SPECTER, elitarny strateg sprzedaży AI.
-    DANE: Rezultat: ${product}, Cel: ${goal}, Obiekcja: ${objection}
-    Zwróć wynik w formacie Markdown z tabelą diagnozy.
+  diagnosis: (product: string, goal: string, objection: string, lang: Language) => `
+    ROLE: SPECTER, Elite Sales Strategist.
+    LANGUAGE: Respond strictly in ${lang}.
+    DATA: Product: ${product}, Goal: ${goal}, Objection: ${objection}.
+    Provide a detailed diagnosis table and a short recommendation.
+    Additionally, at the very end, provide a section "NEXT_STEP_HINT" with one sentence of tactical advice.
   `,
   
-  journey: (steps: string, leak: string) => `
-    ROLE: SPECTER, analityk procesów.
-    ZADANIE: Zmapować lejek i postawić hipotezę o przecieku: ${steps}, Przeciek: ${leak}
+  fieldSuggestion: (fieldName: string, currentContext: string, lang: Language) => `
+    ROLE: SPECTER, Sales Assistant.
+    FIELD: ${fieldName}
+    CONTEXT: ${currentContext}
+    LANGUAGE: Respond strictly in ${lang}.
+    GIVE 3 brief, professional suggestions for this field in sales context.
+    Format: Suggestion 1 | Suggestion 2 | Suggestion 3
   `,
 
-  arsenal: (archetype: string, goal: string, objection: string) => `
-    ROLE: SPECTER, copywriter.
-    Archetyp: ${archetype}, Cel: ${goal}, Obiekcja: ${objection}
+  sprint: (goal: string, lang: Language) => `
+    ROLE: SPECTER, Tactical Commander.
+    LANGUAGE: Respond strictly in ${lang}.
+    GOAL: ${goal}.
+    Generate a JSON array of 4 weeks for a sales sprint.
   `,
 
-  automation: (tasks: string, time: string) => `
-    ROLE: SPECTER, optymalizacja.
-    Zadania: ${tasks}, Czas: ${time}
-  `,
-
-  sprint: (goal: string) => `
-    ROLE: SPECTER, dowódca polowy.
-    ZADANIE: Stwórz plan bitwy na 30 dni dla celu: ${goal}.
-    Musisz zwrócić tablicę 4 tygodni, każdy z misją, 3-4 konkretnymi działaniami i jednym KPI.
-  `,
-
-  workshop: (kpis: string, notes: string) => `
-    ROLE: SPECTER, strateg.
-    KPI: ${kpis}, Notatki: ${notes}
+  metricsAnalysis: (metrics: any, lang: Language) => `
+    ROLE: SPECTER, Performance Analyst.
+    LANGUAGE: Respond strictly in ${lang}.
+    Analyze: Leads: ${metrics.currentLeads}, Conv: ${metrics.conversionRate}%, Avg Deal: ${metrics.avgDealValue}, CAC: ${metrics.cac}.
+    Provide a quick SWOT analysis of these numbers.
   `
 };
 

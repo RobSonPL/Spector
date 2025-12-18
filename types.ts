@@ -2,15 +2,12 @@
 export type StepId = 
   | 'intro'
   | 'diagnosis'
-  | 'journey'
-  | 'archetype'
   | 'dashboard'
-  | 'arsenal'
-  | 'automation'
+  | 'archetype'
   | 'sprint'
-  | 'summary'
-  | 'feedback'
-  | 'workshop';
+  | 'summary';
+
+export type Language = 'pl' | 'en' | 'de' | 'es';
 
 export interface SprintAction {
   id: string;
@@ -25,38 +22,72 @@ export interface SprintWeek {
   kpi: string;
 }
 
+export interface DashboardMetrics {
+  currentLeads: number;
+  conversionRate: number;
+  avgDealValue: number;
+  targetLeads: number;
+  cac: number;
+  clv: number;
+}
+
+export interface ResearchHistory {
+  id: string;
+  date: string;
+  product: string;
+  goal: string;
+  summary: string;
+  metrics?: DashboardMetrics;
+}
+
 export interface UserState {
+  language: Language;
+  theme: 'dark' | 'light';
   productResult: string;
   quarterlyGoal: string;
   mainObjection: string;
-  funnelSteps: string;
-  funnelLeak: string;
-  archetype: string;
-  arsenalGoal: string;
-  hatedTasks: string;
-  timeLost: string;
-  kpisConfirmed: boolean;
+  archetypes: string[]; // Zmieniono z archetype: string
+  metrics: DashboardMetrics;
+  history: ResearchHistory[];
   sprintWeeks: SprintWeek[];
-  sprintResultData?: string;
+  fieldSuggestions: { [key: string]: string };
 }
 
 export interface Step {
   id: StepId;
-  title: string;
-  role: string;
-  task: string;
+  title: Record<Language, string>;
+  role: Record<Language, string>;
 }
 
 export const APP_STEPS: Step[] = [
-  { id: 'intro', title: 'Start', role: 'SPECTER', task: 'Inicjalizacja' },
-  { id: 'diagnosis', title: 'Diagnoza Silnika', role: 'Strateg', task: 'Analiza wąskich gardeł' },
-  { id: 'journey', title: 'Mapa Podróży', role: 'Analityk Procesów', task: 'Identyfikacja punktów tarcia' },
-  { id: 'archetype', title: 'Archetyp Sprzedawcy', role: 'Strateg Brandingu', task: 'Definicja stylu' },
-  { id: 'dashboard', title: 'Dashboard Liczb', role: 'Analityk Wydajności', task: 'Ustalenie KPI' },
-  { id: 'arsenal', title: 'Arsenał Handlowca', role: 'Copywriter Sprzedażowy', task: 'Budowa amunicji' },
-  { id: 'automation', title: 'Automatyzacja', role: 'Specjalista Optymalizacji', task: 'Odzyskiwanie czasu' },
-  { id: 'sprint', title: 'Sprint 30 Dni', role: 'Dowódca Polowy', task: 'Plan bitwy' },
-  { id: 'summary', title: 'Podsumowanie', role: 'Analityk Postępu', task: 'Wizualizacja sukcesu' },
-  { id: 'feedback', title: 'Pętla Feedbacku', role: 'Analityk Pola Bitwy', task: 'Analiza Win/Loss' },
-  { id: 'workshop', title: 'Warsztat Strategiczny', role: 'Strateg Sprzedaży', task: 'Plan na kolejny kwartał' },
+  { 
+    id: 'intro', 
+    title: { pl: 'Start', en: 'Start', de: 'Start', es: 'Inicio' }, 
+    role: { pl: 'SPECTER', en: 'SPECTER', de: 'SPECTER', es: 'SPECTER' }
+  },
+  { 
+    id: 'diagnosis', 
+    title: { pl: 'Diagnoza', en: 'Diagnosis', de: 'Diagnose', es: 'Diagnóstico' }, 
+    role: { pl: 'Strateg', en: 'Strategist', de: 'Stratege', es: 'Estratega' }
+  },
+  { 
+    id: 'dashboard', 
+    title: { pl: 'Dashboard', en: 'Dashboard', de: 'Dashboard', es: 'Panel' }, 
+    role: { pl: 'Analityk', en: 'Analyst', de: 'Analyst', es: 'Analista' }
+  },
+  { 
+    id: 'archetype', 
+    title: { pl: 'Archetyp', en: 'Archetype', de: 'Archetyp', es: 'Arquetipo' }, 
+    role: { pl: 'Profilowanie', en: 'Profiling', de: 'Profilierung', es: 'Perfilado' }
+  },
+  { 
+    id: 'sprint', 
+    title: { pl: 'Sprint 30', en: 'Sprint 30', de: 'Sprint 30', es: 'Sprint 30' }, 
+    role: { pl: 'Dowódca', en: 'Commander', de: 'Kommandant', es: 'Comandante' }
+  },
+  { 
+    id: 'summary', 
+    title: { pl: 'Wynik', en: 'Result', de: 'Ergebnis', es: 'Resultado' }, 
+    role: { pl: 'Raport', en: 'Report', de: 'Bericht', es: 'Informe' }
+  },
 ];
